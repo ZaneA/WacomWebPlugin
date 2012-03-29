@@ -7,9 +7,13 @@
 
 \**********************************************************/
 
+#include "XInputWrapper.h"
+
 #include "WacomWebPluginAPI.h"
 
 #include "WacomWebPlugin.h"
+
+#include <stdio.h>
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @fn WacomWebPlugin::StaticInitialize()
@@ -65,6 +69,9 @@ void WacomWebPlugin::onPluginReady()
     // created, and we are ready to interact with the page and such.  The
     // PluginWindow may or may not have already fire the AttachedEvent at
     // this point.
+    printf("Startup!\n");
+    XInputWrapper::running = 1;
+    boost::thread t(boost::bind(&XInputWrapper::run));
 }
 
 void WacomWebPlugin::shutdown()
@@ -74,6 +81,8 @@ void WacomWebPlugin::shutdown()
     // object should be released here so that this object can be safely
     // destroyed. This is the last point that shared_from_this and weak_ptr
     // references to this object will be valid
+    printf("Shutdown!\n");
+    XInputWrapper::running = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -9,91 +9,92 @@
 #include "DOM/Document.h"
 #include "global/config.h"
 
+#include "XInputWrapper.h"
 #include "WacomWebPluginAPI.h"
 
 char PenAPI::get_isWacom()
 {
-  return 1;
+  return XInputWrapper::isWacom;
 }
 
 char PenAPI::get_isEraser()
 {
-  return 0;
+  return XInputWrapper::isEraser;
 }
 
 float PenAPI::get_pressure()
 {
-  return 0.0f;
+  return XInputWrapper::pressure;
 }
 
 long PenAPI::get_posX()
 {
-  return 0;
+  return XInputWrapper::posX;
 }
 
 long PenAPI::get_posY()
 {
-  return 0;
+  return XInputWrapper::posY;
 }
 
 float PenAPI::get_sysX()
 {
-  return 0.0f;
+  return XInputWrapper::sysX;
 }
 
 float PenAPI::get_sysY()
 {
-  return 0.0f;
+  return XInputWrapper::sysY;
 }
 
 long PenAPI::get_tabX()
 {
-  return 0;
+  return XInputWrapper::tabX;
 }
 
 long PenAPI::get_tabY()
 {
-  return 0;
+  return XInputWrapper::tabY;
 }
 
 float PenAPI::get_rotationDeg()
 {
-  return 0.0f;
+  return XInputWrapper::rotationDeg;
 }
 
 float PenAPI::get_rotationRad()
 {
-  return 0.0f;
+  return XInputWrapper::rotationRad;
 }
 
 float PenAPI::get_tiltX()
 {
-  return 0.0f;
+  return XInputWrapper::tiltX;
 }
 
 float PenAPI::get_tiltY()
 {
-  return 0.0f;
+  return XInputWrapper::tiltY;
 }
 
 float PenAPI::get_tangentialPressure()
 {
-  return 0.0f;
+  return XInputWrapper::tangentialPressure;
 }
 
 long PenAPI::get_version()
 {
-  return 1101;
+  return XInputWrapper::version;
 }
 
 long PenAPI::get_pointerType()
 {
-  return 0;
+  return XInputWrapper::pointerType;
 }
 
 std::string PenAPI::get_tabletModel()
 {
-  return "";
+  return XInputWrapper::tabletModel;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
