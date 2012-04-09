@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 // This corresponds to the mouse on my system
-#define DEVICE_NUM 8
+#define DEVICE_NUM 10
 
 typedef class XInputWrapper {
   public:

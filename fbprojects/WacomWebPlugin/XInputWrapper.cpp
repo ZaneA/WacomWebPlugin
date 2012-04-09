@@ -27,9 +27,13 @@ long XInputWrapper::version = 1101;
 long XInputWrapper::pointerType = 0;
 std::string XInputWrapper::tabletModel = "Intuos 5";
 
+static int pressure_min = 0;
+static int pressure_max = 1;
+
 XDeviceInfo* XInputWrapper::findDeviceById(Display *display, int id)
 {
-  XDeviceInfo *devices;
+  XDeviceInfo *tablet = NULL;
+  XDeviceInfo *devices = NULL;
   int num;
 
   devices = XListInputDevices(display, &num);
@@ -37,11 +41,25 @@ XDeviceInfo* XInputWrapper::findDeviceById(Display *display, int id)
   for (int i = 0; i < num; i++) {
     if (id == devices[i].id) {
       printf("Got %s\n", devices[i].name);
-      return &devices[i];
+      tablet = &devices[i];
+
+      XAnyClassPtr any = (XAnyClassPtr)tablet->inputclassinfo;
+
+      for (int j = 0; j < tablet->num_classes; j++) {
+        if (any->c_class == ValuatorClass) {
+          XValuatorInfoPtr v = (XValuatorInfoPtr)any;
+          pressure_min = v->axes[2].min_value;
+          pressure_max = v->axes[2].max_value;
+          printf("PRESSURE DEBUG: min=%d, max=%d\n", v->axes[2].min_value, v->axes[2].max_value);
+          break;
+        }
+
+        any = (XAnyClassPtr)((char *)any + any->length);
+      }
     }
   }
 
-  return NULL;
+  return tablet;
 }
 
 int XInputWrapper::registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo)
@@ -76,7 +94,7 @@ int XInputWrapper::registerDeviceEvents(Display *display, XDeviceInfo *deviceInf
           break;
 
         default:
-          fprintf(stderr, "Unknown class.\n");
+          fprintf(stderr, "Unknown class %d.\n", ip->input_class);
           break;
       }
     }
@@ -104,11 +122,14 @@ void XInputWrapper::printDeviceEvents(Display *display)
 
       for (int i = 0; i < motion->axes_count; i++) {
 
-        if (motion->first_axis + i == 0)
+        if (motion->first_axis + i == 0) // X
           XInputWrapper::tabX = XInputWrapper::sysX = XInputWrapper::posX = motion->axis_data[i];
 
-        if (motion->first_axis + i == 1)
+        if (motion->first_axis + i == 1) // Y
           XInputWrapper::tabY = XInputWrapper::sysY = XInputWrapper::posY = motion->axis_data[i];
+
+        if (motion->first_axis + i == 2) // Pressure
+          XInputWrapper::pressure = motion->axis_data[i] / ((float)pressure_max - (float)pressure_min);
 
         printf("%d axis = %d, ", motion->first_axis + i, motion->axis_data[i]);
       }
@@ -119,10 +140,8 @@ void XInputWrapper::printDeviceEvents(Display *display)
 
       if (ev.type == XInputWrapper::buttonPressType) {
         XInputWrapper::pointerType = 1; // Pen
-        XInputWrapper::pressure = (float)((double)rand() / (double)RAND_MAX);
       } else {
         XInputWrapper::pointerType = 0; // Out of proximity
-        XInputWrapper::pressure = 0.0f;
       }
 
       printf("Button %s event on button %d\n", (ev.type == XInputWrapper::buttonPressType) ? "press" : "release", button->button);
