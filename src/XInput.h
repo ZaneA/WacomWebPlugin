@@ -32,10 +32,8 @@
 #include <X11/Xutil.h>
 
 // Helper macros, for returning results.
-#define XINPUT_INT32(name) if (IS_IDENTIFIER(""#name)) { INT32_TO_NPVARIANT(values->name, *result); return true; }
-#define XINPUT_BOOLEAN(name) if (IS_IDENTIFIER(""#name)) { BOOLEAN_TO_NPVARIANT(values->name, *result); return true; }
-#define XINPUT_DOUBLE(name) if (IS_IDENTIFIER(""#name)) { DOUBLE_TO_NPVARIANT(values->name, *result); return true; }
-#define XINPUT_STRINGZ(name) if (IS_IDENTIFIER(""#name)) { STRINGZ_TO_NPVARIANT(strdup(values->name), *result); return true; }
+#define XINPUT(name, type) if (IS_IDENTIFIER(""#name)) { type##_TO_NPVARIANT(values->name, *result); return true; }
+#define XINPUT_STRING(name) if (IS_IDENTIFIER(""#name)) { STRINGZ_TO_NPVARIANT(strdup(values->name), *result); return true; }
 
 extern NPClass BaseClass;
 
@@ -61,7 +59,7 @@ typedef struct xinput_values_t {
 } xinput_values_t;
 
 // Any other global XInput wrapper state.
-typedef struct xinput_wrapper_t {
+typedef struct xinput_state_t {
   bool running;
   pthread_t thread;
 
@@ -73,7 +71,7 @@ typedef struct xinput_wrapper_t {
   int buttonReleaseType;
   int proximityInType;
   int proximityOutType;
-} xinput_wrapper_t;
+} xinput_state_t;
 
 //
 // Functions

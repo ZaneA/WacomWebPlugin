@@ -28,13 +28,19 @@
 #include "XInput.h"
 
 
+//
+// Globals.
+//
+
+// Holds the values for the Wacom API.
 xinput_values_t g_xinput_values = {
   .isWacom = true,
-  .tabletModel = "Intuos 5",
+  .tabletModel = "Intuos 5", // FIXME
   .tabletModelID = "Intuos 5",
 };
 
-xinput_wrapper_t g_xinput_wrapper = {
+// Holds XInput wrapper state.
+xinput_state_t g_xinput_state = {
   .pressure_min = 0,
   .pressure_max = 1,
   .motionType = -1,
@@ -43,6 +49,7 @@ xinput_wrapper_t g_xinput_wrapper = {
   .proximityInType = -1,
   .proximityOutType = -1,
 };
+
 
 //
 // Functions.
@@ -58,7 +65,7 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
 
   for (int i = 0; i < num; i++) {
     if (id == devices[i].id) {
-      printf("Got %s\n", devices[i].name);
+      debug("Got %s, %i\n", devices[i].name, devices[i].type);
       tablet = &devices[i];
 
       XAnyClassPtr any = (XAnyClassPtr)tablet->inputclassinfo;
@@ -66,9 +73,9 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
       for (int j = 0; j < tablet->num_classes; j++) {
         if (any->class == ValuatorClass) {
           XValuatorInfoPtr v = (XValuatorInfoPtr)any;
-          g_xinput_wrapper.pressure_min = v->axes[2].min_value;
-          g_xinput_wrapper.pressure_max = v->axes[2].max_value;
-          printf("PRESSURE DEBUG: min=%d, max=%d\n", v->axes[2].min_value, v->axes[2].max_value);
+          g_xinput_state.pressure_min = v->axes[2].min_value;
+          g_xinput_state.pressure_max = v->axes[2].max_value;
+          debug("PRESSURE DEBUG: min=%d, max=%d\n", v->axes[2].min_value, v->axes[2].max_value);
           break;
         }
 
@@ -89,10 +96,7 @@ static int xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo
 
   XDevice *device = XOpenDevice(display, deviceInfo->id);
 
-  if (device == NULL) {
-    fprintf(stderr, "Unable to open device.\n");
-    return 0;
-  }
+  assert(device != NULL);
 
   if (device->num_classes > 0) {
     XInputClassInfo *ip;
@@ -100,15 +104,18 @@ static int xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo
 
     for (ip = device->classes, i = 0; i < deviceInfo->num_classes; ip++, i++) {
       switch (ip->input_class) {
+        case KeyClass:
+          break;
+
         case ButtonClass:
-          DeviceButtonPress(device, g_xinput_wrapper.buttonPressType, eventList[num]); num++;
-          DeviceButtonRelease(device, g_xinput_wrapper.buttonReleaseType, eventList[num]); num++;
+          DeviceButtonPress(device, g_xinput_state.buttonPressType, eventList[num]); num++;
+          DeviceButtonRelease(device, g_xinput_state.buttonReleaseType, eventList[num]); num++;
           break;
 
         case ValuatorClass:
-          DeviceMotionNotify(device, g_xinput_wrapper.motionType, eventList[num]); num++;
-          //ProximityIn(device, g_xinput_wrapper.proximityInType, eventList[num]); num++;
-          //ProximityOut(device, g_xinput_wrapper.proximityOutType, eventList[num]); num++;
+          DeviceMotionNotify(device, g_xinput_state.motionType, eventList[num]); num++;
+          ProximityIn(device, g_xinput_state.proximityInType, eventList[num]); num++;
+          ProximityOut(device, g_xinput_state.proximityOutType, eventList[num]); num++;
           break;
 
         default:
@@ -130,6 +137,7 @@ static void xinput_printDeviceEvents(Display *display)
 {
   XEvent ev;
 
+  // This allows the thread to finish instead of blocking on XNextEvent.
   if (XPending(display) <= 0) {
     usleep(1000);
     return;
@@ -137,8 +145,8 @@ static void xinput_printDeviceEvents(Display *display)
 
   XNextEvent(display, &ev);
 
-  if (ev.type == g_xinput_wrapper.motionType) {
-    printf("Motion event\n");
+  if (ev.type == g_xinput_state.motionType) {
+    debug("Motion event\n");
 
     XDeviceMotionEvent *motion = (XDeviceMotionEvent*)&ev;
 
@@ -151,38 +159,38 @@ static void xinput_printDeviceEvents(Display *display)
         g_xinput_values.tabY = g_xinput_values.sysY = g_xinput_values.posY = motion->axis_data[i];
 
       if (motion->first_axis + i == 2) // Pressure
-        g_xinput_values.pressure = motion->axis_data[i] / ((float)g_xinput_wrapper.pressure_max - (float)g_xinput_wrapper.pressure_min);
+        g_xinput_values.pressure = motion->axis_data[i] / ((float)g_xinput_state.pressure_max - (float)g_xinput_state.pressure_min);
 
-      printf("%d axis = %d, ", motion->first_axis + i, motion->axis_data[i]);
+      debug("%d axis = %d, ", motion->first_axis + i, motion->axis_data[i]);
     }
 
-    printf("\n");
-  } else if (ev.type == g_xinput_wrapper.buttonPressType || ev.type == g_xinput_wrapper.buttonReleaseType) {
+    debug("\n");
+  } else if (ev.type == g_xinput_state.buttonPressType || ev.type == g_xinput_state.buttonReleaseType) {
     XDeviceButtonEvent *button = (XDeviceButtonEvent*)&ev;
 
-    if (ev.type == g_xinput_wrapper.buttonPressType) {
+    if (ev.type == g_xinput_state.buttonPressType) {
       g_xinput_values.pointerType = 1; // Pen
     } else {
       g_xinput_values.pointerType = 0; // Out of proximity
     }
 
-    printf("Button %s event on button %d\n", (ev.type == g_xinput_wrapper.buttonPressType) ? "press" : "release", button->button);
+    debug("Button %s event on button %d\n", (ev.type == g_xinput_state.buttonPressType) ? "press" : "release", button->button);
 
     for (int i = 0; i < button->axes_count; i++) {
-      printf("%d axis = %d, ", button->first_axis + i, button->axis_data[i]);
+      debug("%d axis = %d, ", button->first_axis + i, button->axis_data[i]);
     }
 
-    printf("\n");
-  } else if (ev.type == g_xinput_wrapper.proximityInType || ev.type == g_xinput_wrapper.proximityOutType) {
+    debug("\n");
+  } else if (ev.type == g_xinput_state.proximityInType || ev.type == g_xinput_state.proximityOutType) {
     XProximityNotifyEvent *prox = (XProximityNotifyEvent*)&ev;
 
-    printf("%s proximity\n", (ev.type == g_xinput_wrapper.proximityInType) ? "In" : "Out");
+    debug("%s proximity\n", (ev.type == g_xinput_state.proximityInType) ? "In" : "Out");
 
     for (int i = 0; i < prox->axes_count; i++) {
-      printf("%d axis = %d, ", prox->first_axis + i, prox->axis_data[i]);
+      debug("%d axis = %d, ", prox->first_axis + i, prox->axis_data[i]);
     }
 
-    printf("\n");
+    debug("\n");
   }
 }
 
@@ -190,10 +198,7 @@ static void *xinput_run(void *args)
 {
   Display *display = XOpenDisplay(NULL);
 
-  if (display == NULL) {
-    fprintf(stderr, "Couldn't open display.\n");
-    return NULL;
-  }
+  assert(display != NULL);
 
   XDeviceInfo *info = xinput_findDeviceById(display, 8);
 
@@ -204,35 +209,38 @@ static void *xinput_run(void *args)
   }
 
   if (xinput_registerDeviceEvents(display, info)) {
-    while (g_xinput_wrapper.running) {
+    while (g_xinput_state.running) {
       xinput_printDeviceEvents(display);
     }
   }
 
   XCloseDisplay(display);
+
   return NULL;
 }
 
 // Start the XInput wrapper, in a thread.
 void xinput_start()
 {
-  printf("xinput_start()\n");
-  g_xinput_wrapper.running = true;
+  debug("xinput_start()\n");
 
   // Create a thread running xinput_run().
-  int ret = pthread_create(&g_xinput_wrapper.thread, NULL, xinput_run, NULL);
+  g_xinput_state.running = true;
+  int ret = pthread_create(&g_xinput_state.thread, NULL, xinput_run, NULL);
   assert(ret == 0);
 }
 
 void xinput_stop()
 {
-  printf("xinput_stop()\n");
-  g_xinput_wrapper.running = false;
+  debug("xinput_stop()\n");
 
-  int ret = pthread_join(g_xinput_wrapper.thread, NULL);
+  // Stop the XInput event thread.
+  g_xinput_state.running = false;
+  int ret = pthread_join(g_xinput_state.thread, NULL);
   assert(ret == 0);
 }
 
+// Return the values table, used in PenAPIObject.c.
 xinput_values_t *xinput_getValues()
 {
   return &g_xinput_values;

@@ -51,6 +51,12 @@
 // Just a helper macro, makes for nicer looking code.
 #define IS_IDENTIFIER(id) (name == g_netscapeFuncs->getstringidentifier(id))
 
+#ifdef DEBUG
+#define debug printf
+#else
+#define debug(body, ...)
+#endif
+
 // Hold pointer to browser functions.
 // Defined in main.c.
 extern NPNetscapeFuncs *g_netscapeFuncs;

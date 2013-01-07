@@ -87,23 +87,23 @@ bool PenAPIGetProperty(NPObject *obj, NPIdentifier name, NPVariant *result)
   // Get values from wrapper.
   xinput_values_t *values = xinput_getValues();
 
-  XINPUT_BOOLEAN(isEraser);
-  XINPUT_BOOLEAN(isWacom);
-  XINPUT_INT32(pointerType);
-  XINPUT_INT32(posX);
-  XINPUT_INT32(posY);
-  XINPUT_DOUBLE(pressure);
-  XINPUT_DOUBLE(rotationDeg);
-  XINPUT_DOUBLE(rotationRad);
-  XINPUT_DOUBLE(sysX);
-  XINPUT_DOUBLE(sysY);
-  XINPUT_INT32(tabX);
-  XINPUT_INT32(tabY);
-  XINPUT_STRINGZ(tabletModel);
-  XINPUT_STRINGZ(tabletModelID);
-  XINPUT_DOUBLE(tangentialPressure);
-  XINPUT_DOUBLE(tiltX);
-  XINPUT_DOUBLE(tiltY);
+  XINPUT(isEraser, BOOLEAN);
+  XINPUT(isWacom, BOOLEAN);
+  XINPUT(pointerType, INT32);
+  XINPUT(posX, INT32);
+  XINPUT(posY, INT32);
+  XINPUT(pressure, DOUBLE);
+  XINPUT(rotationDeg, DOUBLE);
+  XINPUT(rotationRad, DOUBLE);
+  XINPUT(sysX, DOUBLE);
+  XINPUT(sysY, DOUBLE);
+  XINPUT(tabX, INT32);
+  XINPUT(tabY, INT32);
+  XINPUT_STRING(tabletModel);
+  XINPUT_STRING(tabletModelID);
+  XINPUT(tangentialPressure, DOUBLE);
+  XINPUT(tiltX, DOUBLE);
+  XINPUT(tiltY, DOUBLE);
   
   if (IS_IDENTIFIER("version")) {
     // The PLUGIN_VERSION as a decimal.
