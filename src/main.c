@@ -23,6 +23,7 @@
 #include "common.h"
 #include "BaseObject.h"
 #include "PenAPIObject.h"
+#include "XInput.h"
 
 // Hold a pointer to browser functions.
 NPNetscapeFuncs *g_netscapeFuncs = NULL;
@@ -51,7 +52,7 @@ const char* NP_GetMIMEDescription(void)
 // Called when plugin is loaded.
 NPError NP_Initialize(NPNetscapeFuncs *netscapeFuncs, NPPluginFuncs *pluginFuncs)
 {
-  pluginFuncs->version = 1011; // FIXME Taken from fbproject, not sure if it's correct.
+  pluginFuncs->version = PLUGIN_VERSIONL;
   pluginFuncs->size = sizeof(*pluginFuncs);
 
   // Link up function pointers for instances.
@@ -118,12 +119,16 @@ NPError NPP_New(NPMIMEType pluginType, NPP instance, uint16_t mode, int16_t argc
     g_netscapeFuncs->retainobject(g_api.penAPI);
   }
 
+  xinput_start();
+
   return NPERR_NO_ERROR;
 }
 
 // Called when a plugin *instance* is destroyed.
 NPError NPP_Destroy(NPP instance, NPSavedData **save)
 {
+  xinput_stop();
+
   // Release objects.
   g_netscapeFuncs->releaseobject(g_api.penAPI);
   g_netscapeFuncs->releaseobject(g_api.base);

@@ -31,21 +31,21 @@
 #include <npapi.h>
 #include <npfunctions.h>
 
-// Threading
-#include <pthread.h>
-
 // Stdlib
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <assert.h>
 
 
 //
 // Defines.
 //
 
-#define PLUGIN_NAME    "Wacom Web Plugin"
+#define PLUGIN_NAME    "WacomTabletPlugin"
 #define PLUGIN_VERSION "2.0.0.1" // Highest version of API that is supported.
+#define PLUGIN_VERSIONL 2001     // Decimal version of above.
 #define PLUGIN_MIME    "application/x-wacomtabletplugin"
 
 // Just a helper macro, makes for nicer looking code.

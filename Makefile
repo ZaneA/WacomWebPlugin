@@ -1,2 +1,2 @@
 npWacomWebPlugin.so : src/*
-	gcc -DDEBUG -fPIC -o npWacomWebPlugin.so -shared src/*.c -I/usr/include/npapi-sdk
+	gcc -DDEBUG -std=gnu99 -fPIC -o npWacomWebPlugin.so -shared src/*.c -I/usr/include/npapi-sdk -lpthread

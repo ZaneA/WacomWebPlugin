@@ -25,6 +25,7 @@
 //
 
 #include "PenAPIObject.h"
+#include "XInput.h"
 
 
 //
@@ -68,8 +69,8 @@ bool PenAPIHasProperty(NPObject *obj, NPIdentifier name)
       IS_IDENTIFIER("sysY")               || 
       IS_IDENTIFIER("tabX")               || 
       IS_IDENTIFIER("tabY")               || 
-      IS_IDENTIFIER("TabletModel")        || 
-      IS_IDENTIFIER("TabletModelID")      || 
+      IS_IDENTIFIER("tabletModel")        || 
+      IS_IDENTIFIER("tabletModelID")      || 
       IS_IDENTIFIER("tangentialPressure") || 
       IS_IDENTIFIER("tiltX")              || 
       IS_IDENTIFIER("tiltY")              || 
@@ -83,21 +84,30 @@ bool PenAPIHasProperty(NPObject *obj, NPIdentifier name)
 // Most of this will be passed through to an XInput object.
 bool PenAPIGetProperty(NPObject *obj, NPIdentifier name, NPVariant *result)
 {
-  if (IS_IDENTIFIER("isWacom")) {
-    // Is the device a Wacom tablet?
-    INT32_TO_NPVARIANT(1, *result);
-    return true;
-  }
+  // Get values from wrapper.
+  xinput_values_t *values = xinput_getValues();
+
+  XINPUT_BOOLEAN(isEraser);
+  XINPUT_BOOLEAN(isWacom);
+  XINPUT_INT32(pointerType);
+  XINPUT_INT32(posX);
+  XINPUT_INT32(posY);
+  XINPUT_DOUBLE(pressure);
+  XINPUT_DOUBLE(rotationDeg);
+  XINPUT_DOUBLE(rotationRad);
+  XINPUT_DOUBLE(sysX);
+  XINPUT_DOUBLE(sysY);
+  XINPUT_INT32(tabX);
+  XINPUT_INT32(tabY);
+  XINPUT_STRINGZ(tabletModel);
+  XINPUT_STRINGZ(tabletModelID);
+  XINPUT_DOUBLE(tangentialPressure);
+  XINPUT_DOUBLE(tiltX);
+  XINPUT_DOUBLE(tiltY);
   
   if (IS_IDENTIFIER("version")) {
-    // The PLUGIN_VERSION (eg. 2.0.0.*).
-    STRINGN_TO_NPVARIANT(strdup(PLUGIN_VERSION), sizeof(PLUGIN_VERSION), *result);
-    return true;
-  }
- 
-  {
-    // On all unhandled cases we just return the string "test".
-    STRINGZ_TO_NPVARIANT(strdup("test"), *result);
+    // The PLUGIN_VERSION as a decimal.
+    INT32_TO_NPVARIANT(PLUGIN_VERSIONL, *result);
     return true;
   }
 
@@ -105,6 +115,7 @@ bool PenAPIGetProperty(NPObject *obj, NPIdentifier name, NPVariant *result)
 }
 
 // No methods in this API for now so we just return false.
+// Although the API has a "SetFocus" method that should be implemented one day.
 bool PenAPIHasMethod(NPObject *obj, NPIdentifier name) {
   return false;
 }
