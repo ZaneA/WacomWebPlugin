@@ -60,7 +60,7 @@ typedef struct xinput_values_t {
 
 // Any other global XInput wrapper state.
 typedef struct xinput_state_t {
-  bool running;
+  int refcount;
   pthread_t thread;
 
   float pressure_min;

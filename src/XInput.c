@@ -41,6 +41,7 @@ xinput_values_t g_xinput_values = {
 
 // Holds XInput wrapper state.
 xinput_state_t g_xinput_state = {
+  .refcount = 0,
   .pressure_min = 0,
   .pressure_max = 1,
   .motionType = -1,
@@ -209,7 +210,7 @@ static void *xinput_run(void *args)
   }
 
   if (xinput_registerDeviceEvents(display, info)) {
-    while (g_xinput_state.running) {
+    while (g_xinput_state.refcount > 0) {
       xinput_printDeviceEvents(display);
     }
   }
@@ -225,9 +226,13 @@ void xinput_start()
   debug("xinput_start()\n");
 
   // Create a thread running xinput_run().
-  g_xinput_state.running = true;
-  int ret = pthread_create(&g_xinput_state.thread, NULL, xinput_run, NULL);
-  assert(ret == 0);
+  g_xinput_state.refcount++;
+
+  if (g_xinput_state.refcount == 1) {
+    debug("xinput_start(): Creating xinput thread.\n");
+    int ret = pthread_create(&g_xinput_state.thread, NULL, xinput_run, NULL);
+    assert(ret == 0);
+  }
 }
 
 void xinput_stop()
@@ -235,9 +240,12 @@ void xinput_stop()
   debug("xinput_stop()\n");
 
   // Stop the XInput event thread.
-  g_xinput_state.running = false;
-  int ret = pthread_join(g_xinput_state.thread, NULL);
-  assert(ret == 0);
+  g_xinput_state.refcount--;
+  if (g_xinput_state.refcount == 0) {
+    debug("xinput_start(): Joining xinput thread.\n");
+    int ret = pthread_join(g_xinput_state.thread, NULL);
+    assert(ret == 0);
+  }
 }
 
 // Return the values table, used in PenAPIObject.c.
