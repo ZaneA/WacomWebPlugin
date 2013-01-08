@@ -8,7 +8,7 @@ This project is in no way affiliated with Wacom. But until they provide an offic
 Getting Started
 ---
 
-The previous version of this plugin (on the `master` branch) used FireBreath which made things fairly easy, but it is a bulky dependency for a plugin that only requires Linux support.
+The previous version of this plugin used FireBreath which made things fairly easy, but it is a bulky dependency for a plugin that only requires Linux support.
 
 Therefore, getting started with this plugin should be a lot easier. First of all you will need to make sure that you have appropriate NPAPI headers:
 
