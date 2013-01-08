@@ -10,12 +10,14 @@ Getting Started
 
 The previous version of this plugin (on the `master` branch) used FireBreath which made things fairly easy, but it is a bulky dependency for a plugin that only requires Linux support.
 
-Therefore, getting started with this plugin should be a lot easier:
+Therefore, getting started with this plugin should be a lot easier. First of all you will need to make sure that you have appropriate NPAPI headers:
 
-1. Make sure you have the NPAPI headers located at `/usr/include/npapi-sdk/` (or modify the Makefile).
-2. From the root of the repo, run `make`.
-3. Link or copy the resulting plugin to your local plugins directory, i.e. `ln -s /path/to/WacomWebPlugin/npWacomWebPlugin.so ~/.mozilla/plugins/`
-4. Open your browser and navigate to `http://muro.deviantart.com` to see the plugin in action!
+- On Ubuntu you can get these by installing the `firefox-dev` package (`sudo apt-get install firefox-dev`).
+- On ArchLinux you can get these by installing the `npapi-sdk` package (`sudo pacman -Sy npapi-sdk`).
+
+1. From the root of the repo, run `make`.
+2. Link or copy the resulting plugin to your local plugins directory, i.e. `ln -s /path/to/WacomWebPlugin/npWacomWebPlugin.so ~/.mozilla/plugins/`
+3. Open your browser and navigate to [deviantART's Muro](http://sta.sh/muro) to see the plugin in action!
 
 Screenshot
 ---
