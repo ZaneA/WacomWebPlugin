@@ -242,7 +242,7 @@ void xinput_stop()
   // Stop the XInput event thread.
   g_xinput_state.refcount--;
   if (g_xinput_state.refcount == 0) {
-    debug("xinput_start(): Joining xinput thread.\n");
+    debug("xinput_stop(): Joining xinput thread.\n");
     int ret = pthread_join(g_xinput_state.thread, NULL);
     assert(ret == 0);
   }
