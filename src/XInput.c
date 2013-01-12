@@ -35,8 +35,6 @@
 // Holds the values for the Wacom API.
 xinput_values_t g_xinput_values = {
   .isWacom = true,
-  .tabletModel = "Intuos 5", // FIXME
-  .tabletModelID = "Intuos 5",
 };
 
 // Holds XInput wrapper state.
@@ -66,7 +64,12 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
 
   for (int i = 0; i < num; i++) {
     if (id == devices[i].id) {
+      // Fill tablet model here.
+      snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), devices[i].name);
+      snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), devices[i].name);
+
       debug("Got %s, %i\n", devices[i].name, devices[i].type);
+
       tablet = &devices[i];
 
       XAnyClassPtr any = (XAnyClassPtr)tablet->inputclassinfo;

@@ -54,8 +54,8 @@ typedef struct xinput_values_t {
   float tiltY;
   float tangentialPressure;
   long pointerType;
-  char *tabletModel;
-  char *tabletModelID;
+  char tabletModel[256];
+  char tabletModelID[256];
 } xinput_values_t;
 
 // Any other global XInput wrapper state.
