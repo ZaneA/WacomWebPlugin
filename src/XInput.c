@@ -63,7 +63,7 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
   devices = XListInputDevices(display, &num);
 
   for (int i = 0; i < num; i++) {
-    if (id == devices[i].id) {
+    if (strstr(devices[i].name, "stylus") != NULL) {
       // Fill tablet model here.
       snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), devices[i].name);
       snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), devices[i].name);
