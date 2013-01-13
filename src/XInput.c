@@ -54,27 +54,33 @@ xinput_state_t g_xinput_state = {
 // Functions.
 //
 
-static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
+static bool xinput_findDevices(Display *display, XDeviceInfo *stylus_info, XDeviceInfo *eraser_info)
 {
-  XDeviceInfo *tablet = NULL;
-  XDeviceInfo *devices = NULL;
-  int num;
+  int found = 0;
 
-  devices = XListInputDevices(display, &num);
+  int num;
+  XDeviceInfo *devices = XListInputDevices(display, &num);
+
+  Atom stylus = XInternAtom(display, "STYLUS", false);
+  Atom eraser = XInternAtom(display, "ERASER", false);
 
   for (int i = 0; i < num; i++) {
-    if (strstr(devices[i].name, "stylus") != NULL) {
+    debug("Got device \"%s\"\n", devices[i].name);
+
+    if (devices[i].type == stylus) {
+      found++;
+
       // Fill tablet model here.
       snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), devices[i].name);
       snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), devices[i].name);
 
-      debug("Got %s, %i\n", devices[i].name, devices[i].type);
+      debug("Found stylus.\n");
 
-      tablet = &devices[i];
+      memcpy(stylus_info, &devices[i], sizeof(XDeviceInfo));
 
-      XAnyClassPtr any = (XAnyClassPtr)tablet->inputclassinfo;
+      XAnyClassPtr any = (XAnyClassPtr)devices[i].inputclassinfo;
 
-      for (int j = 0; j < tablet->num_classes; j++) {
+      for (int j = 0; j < devices[i].num_classes; j++) {
         if (any->class == ValuatorClass) {
           XValuatorInfoPtr v = (XValuatorInfoPtr)any;
           g_xinput_state.pressure_min = v->axes[2].min_value;
@@ -85,16 +91,24 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
 
         any = (XAnyClassPtr)((char *)any + any->length);
       }
+    } else if (devices[i].type == eraser) {
+      found++;
+
+      debug("Found eraser.\n");
+
+      memcpy(eraser_info, &devices[i], sizeof(XDeviceInfo));
     }
   }
 
-  return tablet;
+  XFreeDeviceList(devices);
+
+  return (found == 2);
 }
 
-static int xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo)
+static XDevice *xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo)
 {
   int num = 0;
-  XEventClass eventList[7];
+  XEventClass eventList[5];
 
   Window rootWin = RootWindow(display, DefaultScreen(display));
 
@@ -130,14 +144,14 @@ static int xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo
 
     if (XSelectExtensionEvent(display, rootWin, eventList, num)) {
       fprintf(stderr, "Error selecting extended events.\n");
-      return 0;
+      return NULL;
     }
   }
 
-  return num;
+  return device;
 }
 
-static void xinput_printDeviceEvents(Display *display)
+static void xinput_printDeviceEvents(Display *display, XDevice *stylus, XDevice *eraser)
 {
   XEvent ev;
 
@@ -150,8 +164,6 @@ static void xinput_printDeviceEvents(Display *display)
   XNextEvent(display, &ev);
 
   if (ev.type == g_xinput_state.motionType) {
-    debug("Motion event\n");
-
     XDeviceMotionEvent *motion = (XDeviceMotionEvent*)&ev;
 
     for (int i = 0; i < motion->axes_count; i++) {
@@ -164,19 +176,9 @@ static void xinput_printDeviceEvents(Display *display)
 
       if (motion->first_axis + i == 2) // Pressure
         g_xinput_values.pressure = motion->axis_data[i] / ((float)g_xinput_state.pressure_max - (float)g_xinput_state.pressure_min);
-
-      debug("%d axis = %d, ", motion->first_axis + i, motion->axis_data[i]);
     }
-
-    debug("\n");
   } else if (ev.type == g_xinput_state.buttonPressType || ev.type == g_xinput_state.buttonReleaseType) {
     XDeviceButtonEvent *button = (XDeviceButtonEvent*)&ev;
-
-    if (ev.type == g_xinput_state.buttonPressType) {
-      g_xinput_values.pointerType = 1; // Pen
-    } else {
-      g_xinput_values.pointerType = 0; // Out of proximity
-    }
 
     debug("Button %s event on button %d\n", (ev.type == g_xinput_state.buttonPressType) ? "press" : "release", button->button);
 
@@ -188,13 +190,17 @@ static void xinput_printDeviceEvents(Display *display)
   } else if (ev.type == g_xinput_state.proximityInType || ev.type == g_xinput_state.proximityOutType) {
     XProximityNotifyEvent *prox = (XProximityNotifyEvent*)&ev;
 
-    debug("%s proximity\n", (ev.type == g_xinput_state.proximityInType) ? "In" : "Out");
-
-    for (int i = 0; i < prox->axes_count; i++) {
-      debug("%d axis = %d, ", prox->first_axis + i, prox->axis_data[i]);
+    if (prox->type == g_xinput_state.proximityInType) {
+      if (prox->deviceid == stylus->device_id) {
+        g_xinput_values.isEraser = false;
+        g_xinput_values.pointerType = 1; // Pen
+      } else {
+        g_xinput_values.isEraser = true;
+        g_xinput_values.pointerType = 3; // Eraser
+      } 
+    } else if (prox->type == g_xinput_state.proximityOutType) {
+      g_xinput_values.pointerType = 0; // Out of proximity
     }
-
-    debug("\n");
   }
 }
 
@@ -204,19 +210,26 @@ static void *xinput_run(void *args)
 
   assert(display != NULL);
 
-  XDeviceInfo *info = xinput_findDeviceById(display, 8);
+  XDeviceInfo stylus_info, eraser_info;
 
-  if (info == NULL) {
+  if (!xinput_findDevices(display, &stylus_info, &eraser_info)) {
     fprintf(stderr, "Couldn't find device.\n");
-    XCloseDisplay(display);
-    return NULL;
+    goto cleanup;
   }
 
-  if (xinput_registerDeviceEvents(display, info)) {
-    while (g_xinput_state.refcount > 0) {
-      xinput_printDeviceEvents(display);
-    }
+  XDevice *stylus = xinput_registerDeviceEvents(display, &stylus_info);
+  XDevice *eraser = xinput_registerDeviceEvents(display, &eraser_info);
+
+  assert(stylus != NULL);
+  assert(eraser != NULL);
+
+  while (g_xinput_state.refcount > 0) {
+    xinput_printDeviceEvents(display, stylus, eraser);
   }
+
+cleanup:
+  XCloseDevice(display, eraser);
+  XCloseDevice(display, stylus);
 
   XCloseDisplay(display);
 
