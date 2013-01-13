@@ -71,8 +71,8 @@ static bool xinput_findDevices(Display *display, XDeviceInfo *stylus_info, XDevi
       found++;
 
       // Fill tablet model here.
-      snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), devices[i].name);
-      snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), devices[i].name);
+      snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), "%s", devices[i].name);
+      snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), "%s", devices[i].name);
 
       debug("Found stylus.\n");
 
@@ -227,10 +227,10 @@ static void *xinput_run(void *args)
     xinput_printDeviceEvents(display, stylus, eraser);
   }
 
-cleanup:
   XCloseDevice(display, eraser);
   XCloseDevice(display, stylus);
 
+cleanup:
   XCloseDisplay(display);
 
   return NULL;
