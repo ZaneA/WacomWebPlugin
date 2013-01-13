@@ -1,15 +1,14 @@
 # Maintainer: Zane Ashby <zane.a@demonastery.org>
 pkgname=wacomwebplugin
-pkgver=0.1
+pkgver=0.2
 pkgrel=1
 pkgdesc="An implementation of the Wacom Tablet Plugin, on Linux."
 arch=('i686' 'x86_64')
 url="https://github.com/ZaneA/WacomWebPlugin"
 license=('GPL3')
 makedepends=('libx11' 'xorg-xinput')
-source=("https://github.com/ZaneA/WacomWebPlugin/archive/v${pkgver}.tar.gz")
-noextract=('README.md' 'screenshot.png' 'packaging' 'src' 'LICENSE.txt')
-md5sums=('61f1e326033186c3316352c65f8317de')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/ZaneA/WacomWebPlugin/archive/v${pkgver}.tar.gz")
+md5sums=('265254b09b9a8f0a9ded9a605d589d34')
 
 build() {
   cd "$srcdir/WacomWebPlugin-$pkgver"
