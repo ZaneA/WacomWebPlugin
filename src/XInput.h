@@ -27,9 +27,8 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include <X11/Xlib.h>
-#include <X11/extensions/XInput.h>
-#include <X11/Xutil.h>
+#include <xcb/xcb.h>
+#include <xcb/xinput.h>
 
 // Helper macros, for returning results.
 #define XINPUT(name, type) if (IS_IDENTIFIER(""#name)) { type##_TO_NPVARIANT(values->name, *result); return true; }

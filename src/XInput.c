@@ -54,21 +54,32 @@ xinput_state_t g_xinput_state = {
 // Functions.
 //
 
-static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
+static xcb_input_device_info_t* xinput_findDeviceById(xcb_connection_t *display, int id)
 {
-  XDeviceInfo *tablet = NULL;
-  XDeviceInfo *devices = NULL;
-  int num;
+  xcb_input_list_input_devices_cookie_t devices_cookie = xcb_input_list_input_devices(display);
 
-  devices = XListInputDevices(display, &num);
+  xcb_input_list_input_devices_reply_t *devices_reply = xcb_input_list_input_devices_reply(display, devices_cookie, NULL);
 
-  for (int i = 0; i < num; i++) {
+  if (devices_reply) {
+    xcb_input_device_info_t *devices = xcb_input_list_input_devices_devices(devices_reply);
+    int num_devices = xcb_input_list_input_devices_devices_length(devices_reply);
+
+    for (int i = 0; i < num_devices; i++) {
+      xcb_input_device_info_t device = devices[i];
+    }
+
+    free(devices_reply);
+  }
+
+  /*for (int i = 0; i < num; i++) {
+    debug("Got device \"%s\", type %i.\n", devices[i].name, devices[i].type);
+
     if (strstr(devices[i].name, "stylus") != NULL) {
       // Fill tablet model here.
       snprintf(g_xinput_values.tabletModel, sizeof(g_xinput_values.tabletModel), devices[i].name);
       snprintf(g_xinput_values.tabletModelID, sizeof(g_xinput_values.tabletModelID), devices[i].name);
 
-      debug("Got %s, %i\n", devices[i].name, devices[i].type);
+      debug("Found stylus.\n");
 
       tablet = &devices[i];
 
@@ -85,10 +96,13 @@ static XDeviceInfo* xinput_findDeviceById(Display *display, int id)
 
         any = (XAnyClassPtr)((char *)any + any->length);
       }
+    } else if (strstr(devices[i].name, "eraser") != NULL) {
+      debug("Found eraser.\n");
     }
-  }
+  }*/
 
-  return tablet;
+  //return tablet;
+  return NULL;
 }
 
 static int xinput_registerDeviceEvents(Display *display, XDeviceInfo *deviceInfo)
@@ -198,17 +212,18 @@ static void xinput_printDeviceEvents(Display *display)
   }
 }
 
+// Run in a thread.
 static void *xinput_run(void *args)
 {
-  Display *display = XOpenDisplay(NULL);
+  xcb_connection_t *display = xcb_connect(NULL, NULL);
 
   assert(display != NULL);
 
-  XDeviceInfo *info = xinput_findDeviceById(display, 8);
+  xcb_input_device_info_t *info = xinput_findDeviceById(display, 8);
 
   if (info == NULL) {
     fprintf(stderr, "Couldn't find device.\n");
-    XCloseDisplay(display);
+    xcb_disconnect(display);
     return NULL;
   }
 
@@ -218,7 +233,7 @@ static void *xinput_run(void *args)
     }
   }
 
-  XCloseDisplay(display);
+  xcb_disconnect(display);
 
   return NULL;
 }
