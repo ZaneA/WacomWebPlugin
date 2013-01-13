@@ -1,0 +1,4 @@
+-DDEBUG
+-std=gnu99
+-I/usr/include/npapi-sdk
+-I/usr/include/firefox
