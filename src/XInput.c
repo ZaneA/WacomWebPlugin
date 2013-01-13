@@ -42,6 +42,8 @@ xinput_state_t g_xinput_state = {
   .refcount = 0,
   .pressure_min = 0,
   .pressure_max = 1,
+  .tilt_min = 0,
+  .tilt_max = 1,
   .motionType = -1,
   .buttonPressType = -1,
   .buttonReleaseType = -1,
@@ -83,9 +85,17 @@ static bool xinput_findDevices(Display *display, XDeviceInfo *stylus_info, XDevi
       for (int j = 0; j < devices[i].num_classes; j++) {
         if (any->class == ValuatorClass) {
           XValuatorInfoPtr v = (XValuatorInfoPtr)any;
-          g_xinput_state.pressure_min = v->axes[2].min_value;
-          g_xinput_state.pressure_max = v->axes[2].max_value;
-          debug("PRESSURE DEBUG: min=%d, max=%d\n", v->axes[2].min_value, v->axes[2].max_value);
+
+          // Pressure.
+          g_xinput_state.pressure_min = v->axes[VALUATOR_PRESSURE].min_value;
+          g_xinput_state.pressure_max = v->axes[VALUATOR_PRESSURE].max_value;
+          debug("Pressure valuator range: min=%d, max=%d\n", v->axes[VALUATOR_PRESSURE].min_value, v->axes[VALUATOR_PRESSURE].max_value);
+
+          // Tilt. Assuming that the range is the same for X and Y...
+          g_xinput_state.tilt_min = v->axes[VALUATOR_TILTX].min_value;
+          g_xinput_state.tilt_max = v->axes[VALUATOR_TILTX].max_value;
+          debug("Tilt valuator range: min=%d, max=%d\n", v->axes[VALUATOR_TILTX].min_value, v->axes[VALUATOR_TILTX].max_value);
+
           break;
         }
 
@@ -168,14 +178,20 @@ static void xinput_printDeviceEvents(Display *display, XDevice *stylus, XDevice 
 
     for (int i = 0; i < motion->axes_count; i++) {
 
-      if (motion->first_axis + i == 0) // X
+      if (motion->first_axis + i == VALUATOR_ABSX) // X
         g_xinput_values.tabX = g_xinput_values.sysX = g_xinput_values.posX = motion->axis_data[i];
 
-      if (motion->first_axis + i == 1) // Y
+      if (motion->first_axis + i == VALUATOR_ABSY) // Y
         g_xinput_values.tabY = g_xinput_values.sysY = g_xinput_values.posY = motion->axis_data[i];
 
-      if (motion->first_axis + i == 2) // Pressure
+      if (motion->first_axis + i == VALUATOR_PRESSURE) // Pressure
         g_xinput_values.pressure = motion->axis_data[i] / ((float)g_xinput_state.pressure_max - (float)g_xinput_state.pressure_min);
+
+      if (motion->first_axis + i == VALUATOR_TILTX) // Tilt X
+        g_xinput_values.tiltX = motion->axis_data[i] / ((float)g_xinput_state.tilt_max - (float)g_xinput_state.tilt_min);
+
+      if (motion->first_axis + i == VALUATOR_TILTY) // Tilt Y
+        g_xinput_values.tiltY = motion->axis_data[i] / ((float)g_xinput_state.tilt_max - (float)g_xinput_state.tilt_min);
     }
   } else if (ev.type == g_xinput_state.buttonPressType || ev.type == g_xinput_state.buttonReleaseType) {
     XDeviceButtonEvent *button = (XDeviceButtonEvent*)&ev;

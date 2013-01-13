@@ -35,6 +35,12 @@
 #define XINPUT(name, type) if (IS_IDENTIFIER(""#name)) { type##_TO_NPVARIANT(values->name, *result); return true; }
 #define XINPUT_STRING(name) if (IS_IDENTIFIER(""#name)) { STRINGZ_TO_NPVARIANT(strdup(values->name), *result); return true; }
 
+#define VALUATOR_ABSX     0
+#define VALUATOR_ABSY     1
+#define VALUATOR_PRESSURE 2
+#define VALUATOR_TILTX    3
+#define VALUATOR_TILTY    4
+
 extern NPClass BaseClass;
 
 // Just about all of these values should be attainable from XInput.
@@ -63,8 +69,9 @@ typedef struct xinput_state_t {
   int refcount;
   pthread_t thread;
 
-  float pressure_min;
-  float pressure_max;
+  // Store range of values for each valuator.
+  float pressure_min, pressure_max;
+  float tilt_min, tilt_max;
 
   int motionType;
   int buttonPressType;
