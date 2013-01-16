@@ -105,20 +105,21 @@ NPError NP_GetValue(NPP instance, NPNVariable variable, void *value)
 // Called when a plugin *instance* is created.
 NPError NPP_New(NPMIMEType pluginType, NPP instance, uint16_t mode, int16_t argc, char *argn[], char *argv[], NPSavedData *saved)
 {
-  // Create Base object if needed, or just retain it.
+  // Create Base object if needed.
   if (g_api.base == NULL) {
     g_api.base = g_netscapeFuncs->createobject(instance, &BaseClass);
-  } else {
-    g_netscapeFuncs->retainobject(g_api.base);
   }
 
-  // Create PenAPI object if needed, or just retain it.
+  // Create PenAPI object if needed.
   if (g_api.penAPI == NULL) {
     g_api.penAPI = g_netscapeFuncs->createobject(instance, &PenAPIClass);
-  } else {
-    g_netscapeFuncs->retainobject(g_api.penAPI);
   }
 
+  // Retain both.
+  g_netscapeFuncs->retainobject(g_api.base);
+  g_netscapeFuncs->retainobject(g_api.penAPI);
+
+  // Start XInput thread.
   xinput_start();
 
   return NPERR_NO_ERROR;
@@ -127,6 +128,7 @@ NPError NPP_New(NPMIMEType pluginType, NPP instance, uint16_t mode, int16_t argc
 // Called when a plugin *instance* is destroyed.
 NPError NPP_Destroy(NPP instance, NPSavedData **save)
 {
+  // Stop XInput thread.
   xinput_stop();
 
   // Release objects.
