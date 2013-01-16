@@ -40,10 +40,23 @@ xinput_values_t g_xinput_values = {
 // Holds XInput wrapper state.
 xinput_state_t g_xinput_state = {
   .refcount = 0,
+
+  .thread = 0,
+
+  .screen_width = 0,
+  .screen_height = 0,
+
+  // Valuator ranges.
+  .absx_min = 0,
+  .absx_min = 0,
+  .absy_max = 1,
+  .absy_max = 1,
   .pressure_min = 0,
   .pressure_max = 1,
   .tilt_min = 0,
   .tilt_max = 1,
+
+  // XInput event types.
   .motionType = -1,
   .buttonPressType = -1,
   .buttonReleaseType = -1,
@@ -85,6 +98,16 @@ static bool xinput_findDevices(Display *display, XDeviceInfo *stylus_info, XDevi
       for (int j = 0; j < devices[i].num_classes; j++) {
         if (any->class == ValuatorClass) {
           XValuatorInfoPtr v = (XValuatorInfoPtr)any;
+
+          // X.
+          g_xinput_state.absx_min = v->axes[VALUATOR_ABSX].min_value;
+          g_xinput_state.absx_min = v->axes[VALUATOR_ABSX].max_value;
+          debug("X valuator range: min=%d, max=%d\n", v->axes[VALUATOR_ABSX].min_value, v->axes[VALUATOR_ABSX].max_value);
+
+          // Y.
+          g_xinput_state.absy_min = v->axes[VALUATOR_ABSY].min_value;
+          g_xinput_state.absy_min = v->axes[VALUATOR_ABSY].max_value;
+          debug("Y valuator range: min=%d, max=%d\n", v->axes[VALUATOR_ABSY].min_value, v->axes[VALUATOR_ABSY].max_value);
 
           // Pressure.
           g_xinput_state.pressure_min = v->axes[VALUATOR_PRESSURE].min_value;
@@ -178,11 +201,29 @@ static void xinput_printDeviceEvents(Display *display, XDevice *stylus, XDevice 
 
     for (int i = 0; i < motion->axes_count; i++) {
 
-      if (motion->first_axis + i == VALUATOR_ABSX) // X
-        g_xinput_values.tabX = g_xinput_values.sysX = g_xinput_values.posX = motion->axis_data[i];
+      if (motion->first_axis + i == VALUATOR_ABSX) { // X
+        // Tablet position.
+        g_xinput_values.tabX = motion->axis_data[i];
+        float absx_range = ((float)g_xinput_state.absx_min - (float)g_xinput_state.absx_max);
 
-      if (motion->first_axis + i == VALUATOR_ABSY) // Y
+        // "Low-res" screen position.
+        g_xinput_values.posX = (int)((motion->axis_data[i] / absx_range) * (float)g_xinput_state.screen_width);
+
+        // "High-res" screen position.
+        g_xinput_values.sysX = ((motion->axis_data[i] / absx_range) * (float)g_xinput_state.screen_width);
+      }
+
+      if (motion->first_axis + i == VALUATOR_ABSY) { // Y
+        // Tablet position.
         g_xinput_values.tabY = g_xinput_values.sysY = g_xinput_values.posY = motion->axis_data[i];
+        float absy_range = ((float)g_xinput_state.absy_min - (float)g_xinput_state.absy_max);
+
+        // "Low-res" screen position.
+        g_xinput_values.posY = (int)((motion->axis_data[i] / absy_range) * (float)g_xinput_state.screen_height);
+
+        // "High-res" screen position.
+        g_xinput_values.sysY = ((motion->axis_data[i] / absy_range) * (float)g_xinput_state.screen_height);
+      }
 
       if (motion->first_axis + i == VALUATOR_PRESSURE) // Pressure
         g_xinput_values.pressure = motion->axis_data[i] / ((float)g_xinput_state.pressure_max - (float)g_xinput_state.pressure_min);
@@ -225,6 +266,11 @@ static void *xinput_run(void *args)
   Display *display = XOpenDisplay(NULL);
 
   assert(display != NULL);
+
+  // FIXME This will surely break with multiple-monitors.
+  // Need some way of finding tablet screen-area.
+  g_xinput_state.screen_width = XWidthOfScreen(DefaultScreenOfDisplay(display));
+  g_xinput_state.screen_height = XHeightOfScreen(DefaultScreenOfDisplay(display));
 
   XDeviceInfo stylus_info, eraser_info;
 

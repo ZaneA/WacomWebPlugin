@@ -69,7 +69,11 @@ typedef struct xinput_state_t {
   int refcount;
   pthread_t thread;
 
+  int screen_width, screen_height;
+
   // Store range of values for each valuator.
+  float absx_min, absx_max;
+  float absy_min, absy_max;
   float pressure_min, pressure_max;
   float tilt_min, tilt_max;
 
