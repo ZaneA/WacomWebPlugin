@@ -46,7 +46,7 @@ const char* NP_GetPluginVersion(void)
 // Plugin MIME + description.
 const char* NP_GetMIMEDescription(void)
 {
-  return PLUGIN_MIME"::"PLUGIN_NAME;
+  return PLUGIN_MIME_DESCRIPTION;
 }
 
 // Called when plugin is loaded.
