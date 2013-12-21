@@ -47,6 +47,9 @@
 #define PLUGIN_VERSION "2.0.0.1" // Highest version of API that is supported.
 #define PLUGIN_VERSIONL 2001     // Decimal version of above.
 #define PLUGIN_MIME    "application/x-wacomtabletplugin"
+#define PLUGIN_MIME2   "application/x-wacom-tablet"
+#define PLUGIN_MIME_DESCRIPTION \
+    PLUGIN_MIME "::" PLUGIN_NAME ";" PLUGIN_MIME2 "::" PLUGIN_NAME
 
 // Just a helper macro, makes for nicer looking code.
 #define IS_IDENTIFIER(id) (name == g_netscapeFuncs->getstringidentifier(id))
